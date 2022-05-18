@@ -1,5 +1,7 @@
 #include "rake-c.h"
 
+#define FILE_NAME "event.txt"
+
 struct local{
     char *file;
     char *args[r_no];
@@ -151,12 +153,61 @@ int execute(char* type){
     //char *binaryPath = "/bin/echo";
     //char *args[] = {binaryPath, "starting", "actionset1", NULL};
  
+    int client = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in my_addr, my_addr1;
+    my_addr.sin_family = AF_INET;
+    my_addr.sin_addr.s_addr = INADDR_ANY;
+    my_addr.sin_port = htons(1299); ///?
+    
+    
+    // Two buffer are for message communication
+    char buffer1[256], buffer2[256];
+
+    
+    /*
     if(strcmp(type, "local") == 0){
         execv(locals[0].file,locals[0].args);
         if(errno != 0){
             fprintf(stderr, "exe failed\n");
         }
     }
+    */
+    
+    FILE* events = fopen(FILE_NAME, "w"); //errors
+    if(FILE_NAME==NULL) {
+        perror("Error opening file");}
+
+    if (client < 0) {
+        fprintf(FILE_NAME, "Client creation failed\n");
+        printf("ERROR: Client creation failed\n");
+        return 1;
+    }
+
+    if (bind(client, (struct sockaddr*) &my_addr1, sizeof(struct sockaddr_in)) == 0)
+        printf("Binded Correctly\n");
+    else
+        fprintf(FILE_NAME, "Unable to bind\n");
+        printf("Unable to bind\n");
+     
+    socklen_t addr_size = sizeof my_addr;
+    int con = connect(client, (struct sockaddr*) &my_addr, sizeof my_addr);
+    if (con == 0)
+        printf("Client Connected\n");
+    else
+        fprintf(FILE_NAME, "Error in Connection\n");
+        printf("Error in Connection\n");
+ 
+    strcpy(buffer2, "Hello");
+    send(client, buffer2, 256, 0);
+    recv(client, buffer1, 256, 0);
+    printf("Server : %s\n", buffer1);
+    return 0;
+    
+    
+    fclose(FILE_NAME);
+
+    printf("Connected to %s\n", type);
+    
     return EXIT_SUCCESS;
 }
 
@@ -168,7 +219,15 @@ int main(int argc, char **argv){
         //}
         populate(lines[3]);
         
+        execute("local");
     }
     //execute(array);
     return EXIT_SUCCESS;
 }
+
+//reads and stores the contents of a Rakefile, 
+//executes actions (locally),
+//captures and report actions' output, and 
+//performs correctly based on whether the action(s) were successful or not
+
+//actions of the nc command (allocate a socket, and connect to an already running rakeserver). just hardcode the network name or address, and port-number of your server into your client's code, but eventually replace these with information read and stored from your Rakefile.
